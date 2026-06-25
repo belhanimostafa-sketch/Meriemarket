@@ -3,56 +3,158 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Meriemarket - Test</title>
+  <meta name="theme-color" content="#0b1020" />
+  <title>Meriemarket - Pi Payment</title>
+  <link rel="icon" href="./logo.jpg" type="image/jpeg" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
   <style>
     body {
+      margin: 0;
+      padding: 0;
       background: #0b1020;
-      color: white;
-      font-family: Arial, sans-serif;
+      color: #fff;
+      font-family: 'Cairo', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      width: 100%;
+      background: rgba(11, 16, 32, 0.9);
+      backdrop-filter: blur(10px);
+      padding: 12px 25px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: fixed;
+      top: 0;
+      z-index: 100;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: #4f86ff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+    .username {
+      font-size: 17px;
+      font-weight: 700;
+      color: #facc15;
+    }
+    .status {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+    .pay-btn {
+      background: linear-gradient(135deg, #4f86ff, #3b82f6);
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 50px;
+      cursor: pointer;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 20px 40px;
       text-align: center;
-      padding: 50px;
+    }
+    .status-text {
+      margin: 20px 0;
+      font-size: 18px;
+      min-height: 60px;
     }
   </style>
 </head>
 <body>
-  <h1>Meriemarket Test</h1>
-  <p id="status">جاري التحميل...</p>
-  <button id="payBtn" style="padding:15px 30px; font-size:18px; margin-top:20px;">Support 1 Pi</button>
+  <header>
+    <div class="user-info">
+      <div class="user-avatar" id="userAvatar">؟</div>
+      <div>
+        <div id="usernameDisplay" class="username">Guest</div>
+        <div id="statusDisplay" class="status">جاري الاتصال...</div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="main-content">
+    <h1>Meriemarket Test</h1>
+    <div id="statusText" class="status-text">اضغط على الزر أدناه</div>
+    <button id="payBtn" class="pay-btn">Support 1 Pi</button>
+  </main>
 
   <script>
-    const statusEl = document.getElementById('status');
-    const btn = document.getElementById('payBtn');
+    (async function() {
+      const statusEl = document.getElementById('statusDisplay');
+      const statusText = document.getElementById('statusText');
+      const btn = document.getElementById('payBtn');
+      const usernameEl = document.getElementById('usernameDisplay');
+      const avatarEl = document.getElementById('userAvatar');
 
-    statusEl.textContent = "جاري تهيئة Pi SDK...";
+      try {
+        await Pi.init({ version: "2.0", sandbox: true });
+        statusEl.textContent = "جاري تسجيل الدخول...";
 
-    Pi.init({ version: "2.0", sandbox: true })
-      .then(() => {
-        statusEl.textContent = "✅ Pi SDK جاهز - جاري تسجيل الدخول...";
-        return Pi.authenticate(["username", "payments"]);
-      })
-      .then(auth => {
-        statusEl.textContent = `✅ مرحبا ${auth.user.username}`;
+        const auth = await Pi.authenticate(["username", "payments"]);
         
+        const username = auth.user.username;
+        usernameEl.textContent = username;
+        avatarEl.textContent = username.charAt(0).toUpperCase();
+        statusEl.textContent = "جاهز ✅";
+
+        // زر الدفع - أسرع نسخة
         btn.onclick = () => {
-          statusEl.textContent = "جاري إنشاء الدفع...";
-          
-          Pi.createPayment({
-            amount: 1,
-            memo: "Support Test",
-            metadata: { kind: "test" }
-          }, {
-            onReadyForServerApproval: () => statusEl.textContent = "✅ تم الإنشاء - وافق الآن",
-            onReadyForServerCompletion: () => statusEl.textContent = "🎉 تم الدفع بنجاح!",
-            onCancel: () => statusEl.textContent = "❌ إلغاء",
-            onError: (err) => statusEl.textContent = "❌ خطأ: " + err.message
-          });
+          statusText.textContent = "جاري إنشاء الدفع...";
+
+          const paymentData = {
+            amount: 1.0,
+            memo: "Support Meriemarket",
+            metadata: { kind: "support" }
+          };
+
+          const callbacks = {
+            onReadyForServerApproval: (paymentId) => {
+              statusText.textContent = "✅ تم إنشاء الدفع!\nوافق بسرعة فوراً!";
+            },
+            onReadyForServerCompletion: (paymentId, txid) => {
+              statusText.textContent = "🎉 تم الدفع بنجاح!\nشكراً لك ❤️";
+            },
+            onCancel: () => {
+              statusText.textContent = "❌ تم إلغاء العملية";
+            },
+            onError: (err) => {
+              statusText.textContent = "❌ " + (err.message || "خطأ في الدفع");
+            }
+          };
+
+          Pi.createPayment(paymentData, callbacks);
         };
-      })
-      .catch(err => {
-        statusEl.textContent = "❌ خطأ: " + err.message;
-        console.error(err);
-      });
+
+      } catch (e) {
+        console.error(e);
+        statusEl.textContent = "فشل: " + (e.message || e);
+      }
+    })();
   </script>
 </body>
 </html>
