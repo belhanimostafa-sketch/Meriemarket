@@ -11,201 +11,56 @@
   <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-  <script>
-    // تهيئة Pi SDK
-    async function initializePi() {
-      if (!window.Pi) {
-        console.error("Pi SDK not loaded");
-        return false;
-      }
-
-      try {
-        await window.Pi.init({ 
-          version: "2.0", 
-          sandbox: true 
-        });
-        console.log("✅ Pi SDK initialized successfully");
-        return true;
-      } catch (e) {
-        console.error("Pi init failed:", e);
-        return false;
-      }
-    }
-  </script>
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #0b1020;
-      color: #fff;
-      font-family: 'Cairo', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      width: 100%;
-      background: rgba(11, 16, 32, 0.8);
-      backdrop-filter: blur(10px);
-      padding: 12px 25px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-sizing: border-box;
-      position: fixed;
-      top: 0;
-      z-index: 100;
-    }
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .user-avatar {
-      width: 35px;
-      height: 35px;
-      background: #4f86ff;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      color: #0b1020;
-      font-size: 14px;
-    }
-    .user-text {
-      display: flex;
-      flex-direction: column;
-    }
-    .username {
-      font-size: 16px;
-      font-weight: 700;
-      color: #facc15;
-      line-height: 1.2;
-    }
-    .status {
-      font-size: 10px;
-      opacity: 0.5;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .pay-btn {
-      background: linear-gradient(135deg, #4f86ff 0%, #3b82f6 100%);
-      color: #fff;
-      border: none;
-      padding: 10px 24px;
-      font-size: 15px;
-      font-weight: 700;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .pay-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-      background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-    }
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 100px 20px 40px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="user-info">
-      <div class="user-avatar" id="userAvatar">?</div>
-      <div class="user-text">
-        <div id="usernameDisplay" class="username">Guest</div>
-        <div id="statusDisplay" class="status">Connecting...</div>
-      </div>
-    </div>
-    <button id="payBtn" class="pay-btn">
-      <span>Support 1 Pi</span>
-    </button>
-  </header>
-  
-  <main class="main-content">
-    <!-- يمكنك إضافة محتوى هنا لاحقاً -->
-  </main>
-
+        
   <script>
     (async function() {
       const statusEl = document.getElementById('statusDisplay');
       const btn = document.getElementById('payBtn');
 
       // تهيئة Pi SDK
-      const initialized = await initializePi();
-      if (!initialized) {
-        statusEl.textContent = "فشل في تهيئة Pi SDK";
+      if (!window.Pi) {
+        statusEl.textContent = "Pi SDK غير موجود";
         return;
       }
 
       try {
+        await window.Pi.init({ version: "2.0", sandbox: true });
         statusEl.textContent = "جاري المصادقة...";
 
-        const auth = await window.Pi.authenticate(["username", "payments"], function(incomplete) {
-          console.log("Incomplete payment found", incomplete);
-        });
-
+        const auth = await window.Pi.authenticate(["username", "payments"]);
+        
         const username = auth.user.username;
         document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
         document.getElementById('usernameDisplay').textContent = username;
         statusEl.textContent = "جاهز ✅";
 
-        // زر الدفع
-        btn.onclick = async () => {
-          try {
-            statusEl.textContent = "جاري إنشاء الدفع...";
+        // زر الدفع - أبسط شكل ممكن
+        btn.onclick = () => {
+          statusEl.textContent = "جاري إنشاء الدفع...";
 
-            const paymentData = {
-              amount: 1.0,
-              memo: "Support Developer",
-              metadata: { kind: "support" }
-            };
+          const paymentData = {
+            amount: 1.0,
+            memo: "Support 1 Pi",
+            metadata: { kind: "support" }
+          };
 
-            const callbacks = {
-              onReadyForServerApproval: (paymentId) => {
-                console.log("Payment created with ID:", paymentId);
-                statusEl.textContent = "⏳ في انتظار موافقتك...";
-              },
+          const callbacks = {
+            onReadyForServerApproval: (paymentId) => {
+              statusEl.textContent = "✅ تم إنشاء الدفع\nوافق بسرعة!";
+            },
+            onReadyForServerCompletion: (paymentId, txid) => {
+              statusEl.textContent = "🎉 تم الدفع بنجاح! شكراً";
+            },
+            onCancel: () => statusEl.textContent = "❌ تم الإلغاء",
+            onError: (err) => statusEl.textContent = "❌ خطأ: " + err.message
+          };
 
-              onReadyForServerCompletion: (paymentId, txid) => {
-                console.log("Payment completed! TXID:", txid);
-                statusEl.textContent = "✅ تم الدفع بنجاح! شكراً لك ❤️";
-              },
-
-              onCancel: () => {
-                statusEl.textContent = "❌ تم إلغاء الدفع";
-              },
-
-              onError: (err) => {
-                console.error(err);
-                statusEl.textContent = "❌ خطأ: " + (err.message || err);
-              }
-            };
-
-            window.Pi.createPayment(paymentData, callbacks);
-
-          } catch (e) {
-            statusEl.textContent = "فشل إنشاء الدفع: " + e.message;
-          }
+          window.Pi.createPayment(paymentData, callbacks);
         };
 
       } catch (e) {
+        statusEl.textContent = "فشل: " + (e.message || e);
         console.error(e);
-        statusEl.textContent = "فشل المصادقة: " + (e.message || e);
       }
     })();
   </script>
