@@ -1,4 +1,4 @@
-<!doctype html>
+            <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
@@ -22,7 +22,7 @@
       try {
         await window.Pi.init({ 
           version: "2.0", 
-          sandbox: true     // ← مهم جداً في مرحلة التطوير
+          sandbox: true 
         });
         console.log("✅ Pi SDK initialized successfully");
         return true;
@@ -120,36 +120,6 @@
       padding: 100px 20px 40px;
       text-align: center;
     }
-    .hero-title {
-      font-size: clamp(32px, 8vw, 64px);
-      font-weight: 900;
-      margin: 0;
-      background: linear-gradient(to bottom, #fff 30%, rgba(255,255,255,0.5) 100%);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -1px;
-    }
-    .hero-subtitle {
-      font-size: clamp(16px, 4vw, 20px);
-      opacity: 0.6;
-      margin-top: 15px;
-      max-width: 600px;
-      line-height: 1.6;
-    }
-    .support-card {
-      margin-top: 50px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 30px;
-      border-radius: 30px;
-      backdrop-filter: blur(5px);
-    }
-    .pi-icon {
-      font-size: 40px;
-      margin-bottom: 10px;
-      display: block;
-    }
   </style>
 </head>
 <body>
@@ -192,7 +162,7 @@
         const username = auth.user.username;
         document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
         document.getElementById('usernameDisplay').textContent = username;
-        statusEl.textContent = "جاهز";
+        statusEl.textContent = "جاهز ✅";
 
         // زر الدفع
         btn.onclick = async () => {
@@ -206,20 +176,30 @@
             };
 
             const callbacks = {
-              onReadyForServerApproval: (id) => {
-                statusEl.textContent = "جاري الموافقة...";
-                // هنا يمكنك إضافة Netlify Functions لاحقاً
+              onReadyForServerApproval: (paymentId) => {
+                console.log("Payment created with ID:", paymentId);
+                statusEl.textContent = "⏳ في انتظار موافقتك...";
               },
-              onReadyForServerCompletion: (id, txid) => {
-                statusEl.textContent = "تم الدفع بنجاح! شكراً لك ❤️";
+
+              onReadyForServerCompletion: (paymentId, txid) => {
+                console.log("Payment completed! TXID:", txid);
+                statusEl.textContent = "✅ تم الدفع بنجاح! شكراً لك ❤️";
               },
-              onCancel: () => statusEl.textContent = "تم الإلغاء",
-              onError: (err) => statusEl.textContent = "خطأ: " + err.message
+
+              onCancel: () => {
+                statusEl.textContent = "❌ تم إلغاء الدفع";
+              },
+
+              onError: (err) => {
+                console.error(err);
+                statusEl.textContent = "❌ خطأ: " + (err.message || err);
+              }
             };
 
             window.Pi.createPayment(paymentData, callbacks);
+
           } catch (e) {
-            statusEl.textContent = "فشل الدفع: " + e.message;
+            statusEl.textContent = "فشل إنشاء الدفع: " + e.message;
           }
         };
 
