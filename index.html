@@ -3,66 +3,56 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b1020" />
-  <title>Meriemarket - Pi Payment Support</title>
-  <link rel="icon" href="./logo.jpg" type="image/jpeg" />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-
-  <!-- Pi SDK -->
+  <title>Meriemarket - Test</title>
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <style>
+    body {
+      background: #0b1020;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Meriemarket Test</h1>
+  <p id="status">جاري التحميل...</p>
+  <button id="payBtn" style="padding:15px 30px; font-size:18px; margin-top:20px;">Support 1 Pi</button>
 
-        
   <script>
-    (async function() {
-      const statusEl = document.getElementById('statusDisplay');
-      const btn = document.getElementById('payBtn');
+    const statusEl = document.getElementById('status');
+    const btn = document.getElementById('payBtn');
 
-      // تهيئة Pi SDK
-      if (!window.Pi) {
-        statusEl.textContent = "Pi SDK غير موجود";
-        return;
-      }
+    statusEl.textContent = "جاري تهيئة Pi SDK...";
 
-      try {
-        await window.Pi.init({ version: "2.0", sandbox: true });
-        statusEl.textContent = "جاري المصادقة...";
-
-        const auth = await window.Pi.authenticate(["username", "payments"]);
+    Pi.init({ version: "2.0", sandbox: true })
+      .then(() => {
+        statusEl.textContent = "✅ Pi SDK جاهز - جاري تسجيل الدخول...";
+        return Pi.authenticate(["username", "payments"]);
+      })
+      .then(auth => {
+        statusEl.textContent = `✅ مرحبا ${auth.user.username}`;
         
-        const username = auth.user.username;
-        document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
-        document.getElementById('usernameDisplay').textContent = username;
-        statusEl.textContent = "جاهز ✅";
-
-        // زر الدفع - أبسط شكل ممكن
         btn.onclick = () => {
           statusEl.textContent = "جاري إنشاء الدفع...";
-
-          const paymentData = {
-            amount: 1.0,
-            memo: "Support 1 Pi",
-            metadata: { kind: "support" }
-          };
-
-          const callbacks = {
-            onReadyForServerApproval: (paymentId) => {
-              statusEl.textContent = "✅ تم إنشاء الدفع\nوافق بسرعة!";
-            },
-            onReadyForServerCompletion: (paymentId, txid) => {
-              statusEl.textContent = "🎉 تم الدفع بنجاح! شكراً";
-            },
-            onCancel: () => statusEl.textContent = "❌ تم الإلغاء",
+          
+          Pi.createPayment({
+            amount: 1,
+            memo: "Support Test",
+            metadata: { kind: "test" }
+          }, {
+            onReadyForServerApproval: () => statusEl.textContent = "✅ تم الإنشاء - وافق الآن",
+            onReadyForServerCompletion: () => statusEl.textContent = "🎉 تم الدفع بنجاح!",
+            onCancel: () => statusEl.textContent = "❌ إلغاء",
             onError: (err) => statusEl.textContent = "❌ خطأ: " + err.message
-          };
-
-          window.Pi.createPayment(paymentData, callbacks);
+          });
         };
-
-      } catch (e) {
-        statusEl.textContent = "فشل: " + (e.message || e);
-        console.error(e);
-      }
-    })();
+      })
+      .catch(err => {
+        statusEl.textContent = "❌ خطأ: " + err.message;
+        console.error(err);
+      });
   </script>
 </body>
 </html>
