@@ -1,4 +1,4 @@
-                          <!doctype html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
@@ -21,135 +21,44 @@
       border: none; 
       border-radius: 50px; 
       margin: 30px 0; 
-      cursor: pointer;
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    #status { 
-      margin: 25px; 
-      font-size: 17px; 
-      min-height: 70px;
-      white-space: pre-line;
-    }
-    .error { color: #ff6b6b; }
-    .success { color: #51cf66; }
+    #status { margin: 25px; font-size: 17px; min-height: 70px; }
   </style>
 </head>
 <body>
-  <h1>🛒 Meriemarket Test</h1>
-  <div id="status">⏳ جاري التحميل...</div>
-  <button id="payBtn" disabled>دعم بـ 1 Pi</button>
+  <h1>Meriemarket Test</h1>
+  <div id="status">جاري التحميل...</div>
+  <button id="payBtn">Support 1 Pi</button>
 
   <script>
     const status = document.getElementById('status');
     const btn = document.getElementById('payBtn');
-    let currentPaymentId = null;
 
     async function initApp() {
       try {
-        // تهيئة الـ SDK في وضع الاختبار
         await Pi.init({ version: "2.0", sandbox: true });
-        
-        // مصادقة المستخدم
         const auth = await Pi.authenticate(["username", "payments"]);
-        status.innerHTML = `👋 مرحبا <strong>${auth.user.username}</strong> ✅`;
-        btn.disabled = false;
+        status.textContent = `مرحبا ${auth.user.username} ✅`;
 
-        // عند الضغط على زر الدفع
-        btn.onclick = async () => {
-          btn.disabled = true;
-          status.innerHTML = "🔄 جاري إنشاء الدفع...";
+        btn.onclick = () => {
+          status.textContent = "🔄 جاري إنشاء الدفع...";
 
-          try {
-            // إنشاء طلب دفع جديد
-            const payment = await Pi.createPayment({
-              amount: 1,
-              memo: "دعم تطوير Meriemarket",
-              metadata: { 
-                kind: "test",
-                userId: auth.user.username 
-              }
-            }, {
-              onReadyForServerApproval: function(paymentId) {
-                currentPaymentId = paymentId;
-                status.innerHTML = "⏳ جاري إرسال طلب الموافقة للخادم...";
-                
-                // ✅ المسار الصحيح لملف pi-approve.js
-                fetch('/.netlify/functions/pi-approve', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    paymentId: paymentId,
-                    userId: auth.user.username 
-                  })
-                })
-                .then(res => res.json())
-                .then(data => {
-                  if (data.success) {
-                    status.innerHTML = "✅ تمت الموافقة من الخادم!\n⏳ جاري إكمال الدفع...";
-                  } else {
-                    status.innerHTML = "❌ فشلت الموافقة: " + data.message;
-                    btn.disabled = false;
-                  }
-                })
-                .catch(err => {
-                  status.innerHTML = "❌ خطأ في الاتصال بالخادم: " + err.message;
-                  btn.disabled = false;
-                });
-              },
-              
-              onReadyForServerCompletion: function(paymentId) {
-                status.innerHTML = "⏳ جاري إرسال طلب الإكمال للخادم...";
-                
-                // ✅ المسار الصحيح لملف pi-complete.js
-                fetch('/.netlify/functions/pi-complete', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    paymentId: paymentId,
-                    userId: auth.user.username 
-                  })
-                })
-                .then(res => res.json())
-                .then(data => {
-                  if (data.success) {
-                    status.innerHTML = "🎉 <span class='success'>تم الدفع بنجاح!</span>\nشكراً لدعمك ❤️";
-                  } else {
-                    status.innerHTML = "❌ فشل الإكمال: " + data.message;
-                  }
-                  btn.disabled = false;
-                })
-                .catch(err => {
-                  status.innerHTML = "❌ خطأ في الاتصال بالخادم: " + err.message;
-                  btn.disabled = false;
-                });
-              },
-              
-              onCancel: function() {
-                status.innerHTML = "❌ تم إلغاء الدفع من قبل المستخدم";
-                btn.disabled = false;
-              },
-              
-              onError: function(err) {
-                status.innerHTML = "❌ <span class='error'>خطأ: " + err.message + "</span>";
-                btn.disabled = false;
-              }
-            });
-            
-          } catch (error) {
-            status.innerHTML = "❌ <span class='error'>فشل إنشاء الدفع: " + error.message + "</span>";
-            btn.disabled = false;
-          }
+          Pi.createPayment({
+            amount: 1,
+            memo: "Support Test",
+            metadata: { kind: "test" }
+          }, {
+            onReadyForServerApproval: () => status.textContent = "✅ تم الإنشاء!\nوافق فوراً!",
+            onReadyForServerCompletion: () => status.textContent = "🎉 تم الدفع بنجاح!",
+            onCancel: () => status.textContent = "❌ إلغاء",
+            onError: (err) => status.textContent = "❌ " + err.message
+          });
         };
-
       } catch (e) {
-        status.innerHTML = "❌ <span class='error'>خطأ في التهيئة: " + e.message + "</span>";
+        status.textContent = "خطأ: " + e.message;
       }
     }
 
-    // تشغيل التطبيق
     initApp();
   </script>
 </body>
