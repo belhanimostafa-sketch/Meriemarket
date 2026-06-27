@@ -1,160 +1,156 @@
-            <!doctype html>
+                          <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b1020" />
-  <title>Meriemarket - Pi Payment</title>
-  <link rel="icon" href="./logo.jpg" type="image/jpeg" />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-
-  <!-- Pi SDK -->
+  <title>Meriemarket</title>
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #0b1020;
-      color: #fff;
-      font-family: 'Cairo', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    body { 
+      background: #0b1020; 
+      color: white; 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      padding: 80px 20px; 
     }
-    header {
-      width: 100%;
-      background: rgba(11, 16, 32, 0.9);
-      backdrop-filter: blur(10px);
-      padding: 12px 25px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: fixed;
-      top: 0;
-      z-index: 100;
-    }
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      background: #4f86ff;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 16px;
-    }
-    .username {
-      font-size: 17px;
-      font-weight: 700;
-      color: #facc15;
-    }
-    .status {
-      font-size: 13px;
-      opacity: 0.8;
-    }
-    .pay-btn {
-      background: linear-gradient(135deg, #4f86ff, #3b82f6);
-      color: #fff;
-      border: none;
-      padding: 12px 28px;
-      font-size: 16px;
-      font-weight: 700;
-      border-radius: 50px;
+    button { 
+      padding: 18px 40px; 
+      font-size: 18px; 
+      background: #4f86ff; 
+      color: white; 
+      border: none; 
+      border-radius: 50px; 
+      margin: 30px 0; 
       cursor: pointer;
     }
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 100px 20px 40px;
-      text-align: center;
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
-    .status-text {
-      margin: 20px 0;
-      font-size: 18px;
-      min-height: 60px;
+    #status { 
+      margin: 25px; 
+      font-size: 17px; 
+      min-height: 70px;
+      white-space: pre-line;
     }
+    .error { color: #ff6b6b; }
+    .success { color: #51cf66; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="user-info">
-      <div class="user-avatar" id="userAvatar">؟</div>
-      <div>
-        <div id="usernameDisplay" class="username">Guest</div>
-        <div id="statusDisplay" class="status">جاري الاتصال...</div>
-      </div>
-    </div>
-  </header>
-  
-  <main class="main-content">
-    <h1>Meriemarket Test</h1>
-    <div id="statusText" class="status-text">اضغط على الزر أدناه</div>
-    <button id="payBtn" class="pay-btn">Support 1 Pi</button>
-  </main>
+  <h1>🛒 Meriemarket Test</h1>
+  <div id="status">⏳ جاري التحميل...</div>
+  <button id="payBtn" disabled>دعم بـ 1 Pi</button>
 
   <script>
-    (async function() {
-      const statusEl = document.getElementById('statusDisplay');
-      const statusText = document.getElementById('statusText');
-      const btn = document.getElementById('payBtn');
-      const usernameEl = document.getElementById('usernameDisplay');
-      const avatarEl = document.getElementById('userAvatar');
+    const status = document.getElementById('status');
+    const btn = document.getElementById('payBtn');
+    let currentPaymentId = null;
 
+    async function initApp() {
       try {
+        // تهيئة الـ SDK في وضع الاختبار
         await Pi.init({ version: "2.0", sandbox: true });
-        statusEl.textContent = "جاري تسجيل الدخول...";
-
-        const auth = await Pi.authenticate(["username", "payments"]);
         
-        const username = auth.user.username;
-        usernameEl.textContent = username;
-        avatarEl.textContent = username.charAt(0).toUpperCase();
-        statusEl.textContent = "جاهز ✅";
+        // مصادقة المستخدم
+        const auth = await Pi.authenticate(["username", "payments"]);
+        status.innerHTML = `👋 مرحبا <strong>${auth.user.username}</strong> ✅`;
+        btn.disabled = false;
 
-        // زر الدفع - أسرع نسخة
-        btn.onclick = () => {
-          statusText.textContent = "جاري إنشاء الدفع...";
+        // عند الضغط على زر الدفع
+        btn.onclick = async () => {
+          btn.disabled = true;
+          status.innerHTML = "🔄 جاري إنشاء الدفع...";
 
-          const paymentData = {
-            amount: 1.0,
-            memo: "Support Meriemarket",
-            metadata: { kind: "support" }
-          };
-
-          const callbacks = {
-            onReadyForServerApproval: (paymentId) => {
-              statusText.textContent = "✅ تم إنشاء الدفع!\nوافق بسرعة فوراً!";
-            },
-            onReadyForServerCompletion: (paymentId, txid) => {
-              statusText.textContent = "🎉 تم الدفع بنجاح!\nشكراً لك ❤️";
-            },
-            onCancel: () => {
-              statusText.textContent = "❌ تم إلغاء العملية";
-            },
-            onError: (err) => {
-              statusText.textContent = "❌ " + (err.message || "خطأ في الدفع");
-            }
-          };
-
-          Pi.createPayment(paymentData, callbacks);
+          try {
+            // إنشاء طلب دفع جديد
+            const payment = await Pi.createPayment({
+              amount: 1,
+              memo: "دعم تطوير Meriemarket",
+              metadata: { 
+                kind: "test",
+                userId: auth.user.username 
+              }
+            }, {
+              onReadyForServerApproval: function(paymentId) {
+                currentPaymentId = paymentId;
+                status.innerHTML = "⏳ جاري إرسال طلب الموافقة للخادم...";
+                
+                // ✅ المسار الصحيح لملف pi-approve.js
+                fetch('/.netlify/functions/pi-approve', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    paymentId: paymentId,
+                    userId: auth.user.username 
+                  })
+                })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.success) {
+                    status.innerHTML = "✅ تمت الموافقة من الخادم!\n⏳ جاري إكمال الدفع...";
+                  } else {
+                    status.innerHTML = "❌ فشلت الموافقة: " + data.message;
+                    btn.disabled = false;
+                  }
+                })
+                .catch(err => {
+                  status.innerHTML = "❌ خطأ في الاتصال بالخادم: " + err.message;
+                  btn.disabled = false;
+                });
+              },
+              
+              onReadyForServerCompletion: function(paymentId) {
+                status.innerHTML = "⏳ جاري إرسال طلب الإكمال للخادم...";
+                
+                // ✅ المسار الصحيح لملف pi-complete.js
+                fetch('/.netlify/functions/pi-complete', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    paymentId: paymentId,
+                    userId: auth.user.username 
+                  })
+                })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.success) {
+                    status.innerHTML = "🎉 <span class='success'>تم الدفع بنجاح!</span>\nشكراً لدعمك ❤️";
+                  } else {
+                    status.innerHTML = "❌ فشل الإكمال: " + data.message;
+                  }
+                  btn.disabled = false;
+                })
+                .catch(err => {
+                  status.innerHTML = "❌ خطأ في الاتصال بالخادم: " + err.message;
+                  btn.disabled = false;
+                });
+              },
+              
+              onCancel: function() {
+                status.innerHTML = "❌ تم إلغاء الدفع من قبل المستخدم";
+                btn.disabled = false;
+              },
+              
+              onError: function(err) {
+                status.innerHTML = "❌ <span class='error'>خطأ: " + err.message + "</span>";
+                btn.disabled = false;
+              }
+            });
+            
+          } catch (error) {
+            status.innerHTML = "❌ <span class='error'>فشل إنشاء الدفع: " + error.message + "</span>";
+            btn.disabled = false;
+          }
         };
 
       } catch (e) {
-        console.error(e);
-        statusEl.textContent = "فشل: " + (e.message || e);
+        status.innerHTML = "❌ <span class='error'>خطأ في التهيئة: " + e.message + "</span>";
       }
-    })();
+    }
+
+    // تشغيل التطبيق
+    initApp();
   </script>
 </body>
 </html>
