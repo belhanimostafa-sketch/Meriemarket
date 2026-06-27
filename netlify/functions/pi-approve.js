@@ -1,5 +1,8 @@
-const fetch = require('node-fetch');
+const fetch = require('node-fetch');  // ✅ أضف هذا السطر
 
+exports.handler = async (event) => {
+  // ... باقي الكود
+};
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
